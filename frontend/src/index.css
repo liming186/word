@@ -1,0 +1,28 @@
+:root {
+  font-family: 'LXGW WenKai', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'STHeiti', sans-serif;
+  line-height: 1.6;
+  font-weight: 400;
+  color: #0f2e1d;
+  background-color: #f2f8f4;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at 18% 20%, #e2f4e8, transparent 35%),
+    radial-gradient(circle at 85% 10%, #d7f3e2, transparent 28%),
+    radial-gradient(circle at 60% 90%, #eaf7ef, transparent 30%),
+    #f2f8f4;
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+}
+
+#root {
+  min-height: 100vh;
+}

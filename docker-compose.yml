@@ -1,0 +1,55 @@
+version: '3.9'
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: 
+      MYSQL_DATABASE: word_app
+      MYSQL_USER: root
+      MYSQL_PASSWORD: 
+    ports:
+      - "3306:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      MYSQL_HOST: db
+      MYSQL_PORT: 3306
+      MYSQL_DB: word_app
+      MYSQL_USER: word
+      MYSQL_PASSWORD: word
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: change-me-please-32-chars-secret!!
+      JWT_EXPIRATION_MINUTES: 60
+      FRONTEND_ORIGIN: http://localhost:4173
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE: http://backend:8080
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "4173:80"
+
+volumes:
+  db-data:
