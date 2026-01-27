@@ -19,8 +19,8 @@ spring:
   jackson:
     default-property-inclusion: non_null
   redis:
-    host: ${REDIS_HOST:localhost}
-    port: ${REDIS_PORT:6379}
+    host: ${SPRING_REDIS_HOST:${REDIS_HOST:localhost}}
+    port: ${SPRING_REDIS_PORT:${REDIS_PORT:6379}}
 
 management:
   endpoints:
