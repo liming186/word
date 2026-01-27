@@ -5,10 +5,8 @@ services:
     image: mysql:8.0
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: 
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
       MYSQL_DATABASE: word_app
-      MYSQL_USER: root
-      MYSQL_PASSWORD: 
     ports:
       - "3306:3306"
     volumes:
@@ -27,13 +25,13 @@ services:
       MYSQL_HOST: db
       MYSQL_PORT: 3306
       MYSQL_DB: word_app
-      MYSQL_USER: word
-      MYSQL_PASSWORD: word
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ""
       REDIS_HOST: redis
       REDIS_PORT: 6379
       JWT_SECRET: change-me-please-32-chars-secret!!
       JWT_EXPIRATION_MINUTES: 60
-      FRONTEND_ORIGIN: http://localhost:4173
+      FRONTEND_ORIGIN_PATTERNS: http://47.83.126.243:4173
     depends_on:
       - db
       - redis
@@ -44,7 +42,7 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_API_BASE: http://backend:8080
+        VITE_API_BASE: http://47.83.126.243:8080
     restart: unless-stopped
     depends_on:
       - backend

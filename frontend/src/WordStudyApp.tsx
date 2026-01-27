@@ -834,7 +834,7 @@ const StudyCard = memo(function StudyCard({
           )}
         </>
       ) : (
-        <p className="muted">先选择是否认识，系统会自动显示释义</p>
+        <p className="muted">请选择是否认识</p>
       )}
       <div className="quiz-actions">
         <button type="button" onClick={() => onMarkLearning(true)} disabled={learningChoice !== null}>
