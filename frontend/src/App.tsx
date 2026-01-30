@@ -363,6 +363,12 @@ function App({ token, currentUser }: QuizAppProps) {
     }
   }
 
+  function goPrev() {
+    if (quizIndex > 0) {
+      setQuizIndex((prev) => prev - 1)
+    }
+  }
+
   function estimateLevel(score: number, total: number) {
     const ratio = total === 0 ? 0 : score / total
     if (ratio <= 0.3) return 'CET-4 基础'
@@ -475,6 +481,9 @@ function App({ token, currentUser }: QuizAppProps) {
                   ))}
                 </div>
                 <div className="quiz-actions">
+                  <button type="button" className="ghost" onClick={goPrev} disabled={quizIndex === 0}>
+                    上一题
+                  </button>
                   <button onClick={goNext}>{quizIndex === vocabQuestions.length - 1 ? '提交测试' : '下一题'}</button>
                 </div>
               </div>
