@@ -1,9 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
 :root {
-  font-family: 'LXGW WenKai', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'STHeiti', sans-serif;
+  font-family: 'Manrope', 'LXGW WenKai', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'STHeiti', sans-serif;
   line-height: 1.6;
   font-weight: 400;
-  color: #0f2e1d;
-  background-color: #f2f8f4;
+  color: #0d2a1b;
+  background-color: #eef7f0;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -12,10 +14,11 @@
 
 body {
   margin: 0;
-  background: radial-gradient(circle at 18% 20%, #e2f4e8, transparent 35%),
-    radial-gradient(circle at 85% 10%, #d7f3e2, transparent 28%),
-    radial-gradient(circle at 60% 90%, #eaf7ef, transparent 30%),
-    #f2f8f4;
+  background:
+    radial-gradient(circle at 15% 12%, rgba(55, 173, 95, 0.18), transparent 38%),
+    radial-gradient(circle at 82% 6%, rgba(18, 118, 63, 0.14), transparent 33%),
+    radial-gradient(circle at 70% 88%, rgba(84, 201, 128, 0.16), transparent 35%),
+    linear-gradient(180deg, #eef7f0 0%, #f7fbf8 100%);
   min-height: 100vh;
 }
 

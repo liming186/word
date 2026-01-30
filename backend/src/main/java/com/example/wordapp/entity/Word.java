@@ -46,6 +46,10 @@ public class Word {
 
     private Integer familiarity; // 0-5 简单熟悉度
 
+    // 记忆强度：0-1，越大越不易遗忘
+    @Column(nullable = false)
+    private Double memoryStrength;
+
     private LocalDateTime nextReviewAt;
 
     private LocalDateTime createdAt;
@@ -63,6 +67,9 @@ public class Word {
         updatedAt = createdAt;
         if (familiarity == null) {
             familiarity = 0;
+        }
+        if (memoryStrength == null) {
+            memoryStrength = 0.2;
         }
     }
 

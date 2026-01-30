@@ -1,7 +1,7 @@
 import type { FormEvent, WheelEvent } from 'react'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from './api'
-import type { ImportResult, StudyStats, Word } from './api'
+import type { ImportResult, StudyBehavior, StudyStats, Word } from './api'
 
 const IMPORT_AT_PREFIX = 'wordapp-import-at'
 const DAILY_TARGET_PREFIX = 'wordapp-daily-target'
@@ -16,6 +16,7 @@ function WordStudyApp({ token, currentUser }: WordStudyProps) {
   const [studyStats, setStudyStats] = useState<StudyStats | null>(null)
   const [studyLoading, setStudyLoading] = useState(false)
   const [studyError, setStudyError] = useState('')
+  const [studyBehavior, setStudyBehavior] = useState<StudyBehavior | null>(null)
   const [wordCount, setWordCount] = useState(0)
   const [dailyTarget, setDailyTarget] = useState(20)
   const [newWordRatio, setNewWordRatio] = useState(60)
@@ -55,6 +56,7 @@ function WordStudyApp({ token, currentUser }: WordStudyProps) {
   const pageRef = useRef<HTMLDivElement | null>(null)
   const wheelLockRef = useRef(0)
   const importInputRef = useRef<HTMLInputElement | null>(null)
+  const sessionStartRef = useRef<number | null>(null)
 
   const currentLearningWord = learningWords[learningIndex]
   const currentMeaningList = useMemo(
@@ -73,6 +75,7 @@ function WordStudyApp({ token, currentUser }: WordStudyProps) {
   useEffect(() => {
     if (!token) return
     void loadOverview()
+    void loadBehavior()
     void loadWords()
   }, [token])
 
@@ -169,6 +172,16 @@ function WordStudyApp({ token, currentUser }: WordStudyProps) {
     }
   }
 
+  async function loadBehavior() {
+    if (!token) return
+    try {
+      const resp = await api.getStudyBehavior(token)
+      setStudyBehavior(resp)
+    } catch {
+      setStudyBehavior(null)
+    }
+  }
+
   async function loadWords() {
     if (!token) return
     setWordLoading(true)
@@ -216,6 +229,7 @@ function WordStudyApp({ token, currentUser }: WordStudyProps) {
     setShowDefinition(false)
     setLearningChoice(null)
     setLearningIndex(0)
+    sessionStartRef.current = Date.now()
     try {
       const stats = await api.recordStudy(token)
       setStudyStats(stats)
@@ -248,6 +262,7 @@ function WordStudyApp({ token, currentUser }: WordStudyProps) {
   }
 
   function closeLearning() {
+    void finishSession()
     setLearningVisible(false)
   }
 
@@ -271,12 +286,28 @@ function WordStudyApp({ token, currentUser }: WordStudyProps) {
       setShowCompletion(true)
       window.setTimeout(() => setShowCompletion(false), 2000)
       setLearningIndex(learningWords.length - 1)
+      void finishSession()
       return
     }
     setLearningIndex(nextIndex)
     setShowDefinition(false)
     setLearningChoice(null)
   }, [learningChoice, showDefinition, learningIndex, learningWords.length])
+
+  async function finishSession() {
+    if (!token) return
+    const start = sessionStartRef.current
+    if (!start) return
+    const durationSeconds = Math.max(0, Math.round((Date.now() - start) / 1000))
+    sessionStartRef.current = null
+    if (durationSeconds < 10) return
+    try {
+      await api.recordSession(token, new Date(start).toISOString(), durationSeconds)
+      void loadBehavior()
+    } catch {
+      // ignore session record errors
+    }
+  }
 
   async function handleImportWords() {
     if (!token || !selectedImportFile) {
@@ -421,6 +452,7 @@ function WordStudyApp({ token, currentUser }: WordStudyProps) {
                     <span>
                       今日已学 {studyStats?.todayCount ?? 0} / {dailyTarget}
                     </span>
+                    <span>今日学习 {studyBehavior?.todayMinutes ?? 0} 分钟</span>
                   </>
                 )}
               </div>
@@ -435,6 +467,40 @@ function WordStudyApp({ token, currentUser }: WordStudyProps) {
               <button type="button" className="ghost" onClick={openLearningPlan}>
                 今日学习计划
               </button>
+            </div>
+            <div className="behavior-card">
+              <div className="behavior-header">学习节奏</div>
+              {studyBehavior ? (
+                <>
+                  <div className="behavior-metrics">
+                    <span>近 7 天平均 {studyBehavior.avgDurationMinutes} 分钟</span>
+                    <span>
+                      高峰时段 {studyBehavior.preferredHour >= 0 ? `${studyBehavior.preferredHour}:00` : '暂无'}
+                    </span>
+                    <span>学习记录 {studyBehavior.sessionsLast7Days} 次</span>
+                    <span>今日学习 {studyBehavior.todayMinutes} 分钟</span>
+                  </div>
+                  <div className="behavior-bars">
+                    <div className="bar-row">
+                      <span>专注度</span>
+                      <div className="bar-track">
+                        <div className="bar-fill" style={{ width: `${studyBehavior.focusScore}%` }} />
+                      </div>
+                      <span>{studyBehavior.focusScore}</span>
+                    </div>
+                    <div className="bar-row">
+                      <span>持续度</span>
+                      <div className="bar-track">
+                        <div className="bar-fill" style={{ width: `${studyBehavior.consistencyScore}%` }} />
+                      </div>
+                      <span>{studyBehavior.consistencyScore}</span>
+                    </div>
+                  </div>
+                  <p className="muted">系统会根据学习时长与时间段动态调整今日计划。</p>
+                </>
+              ) : (
+                <p className="muted">暂无学习行为数据，开始学习后生成。</p>
+              )}
             </div>
             {studyError && <p className="error">{studyError}</p>}
           </section>

@@ -34,6 +34,14 @@ export type VocabAnalysisRequest = {
 export type VocabAnalysisResponse = { analysis: string }
 export type StudyStats = { totalDays: number; streakDays: number; lastStudyDate?: string; todayCount: number }
 export type StudyOverview = { stats: StudyStats; wordCount: number; dueCount: number }
+export type StudyBehavior = {
+  avgDurationMinutes: number
+  preferredHour: number
+  focusScore: number
+  consistencyScore: number
+  sessionsLast7Days: number
+  todayMinutes: number
+}
 export type ImportResult = { importedCount: number; skippedCount: number }
 export type TodayStudyResponse = { words: Word[]; todayCount: number }
 
@@ -152,6 +160,9 @@ export const api = {
   async getStudyOverview(token: string): Promise<StudyOverview> {
     return request<StudyOverview>('/api/study/overview', { method: 'GET' }, token)
   },
+  async getStudyBehavior(token: string): Promise<StudyBehavior> {
+    return request<StudyBehavior>('/api/study/behavior', { method: 'GET' }, token)
+  },
   async getTodayStudy(token: string, dailyTarget: number, newWordRatio: number, importAfter?: string): Promise<TodayStudyResponse> {
     const params = new URLSearchParams({
       dailyTarget: String(dailyTarget),
@@ -164,6 +175,12 @@ export const api = {
   },
   async recordStudy(token: string): Promise<StudyStats> {
     return request<StudyStats>('/api/study/record', { method: 'POST' }, token)
+  },
+  async recordSession(token: string, startedAt: string, durationSeconds: number): Promise<void> {
+    await request<void>('/api/study/session', {
+      method: 'POST',
+      body: JSON.stringify({ startedAt, durationSeconds }),
+    }, token)
   },
   async importWords(token: string, file: File): Promise<ImportResult> {
     const formData = new FormData()

@@ -15,4 +15,6 @@ public interface ReviewRecordRepository extends JpaRepository<ReviewRecord, Long
 
     @Query("select rr from ReviewRecord rr join fetch rr.word where rr.user.username = :username and rr.correct = false order by rr.reviewedAt desc")
     List<ReviewRecord> findIncorrectRecordsWithWord(@Param("username") String username);
+
+    ReviewRecord findTopByWordIdOrderByReviewedAtDesc(Long wordId);
 }

@@ -62,6 +62,7 @@ public class WordService {
                 .wordRoot(payload.wordRoot())
                 .similarWords(payload.similarWords())
                 .examTag(payload.examTag())
+                .memoryStrength(0.2)
                 .owner(user)
                 .build();
         return wordRepository.save(word);
@@ -94,7 +95,21 @@ public class WordService {
         int familiarity = word.getFamiliarity() == null ? 0 : word.getFamiliarity();
         familiarity = Math.max(0, Math.min(5, correct ? familiarity + 1 : familiarity - 1));
         word.setFamiliarity(familiarity);
-        word.setNextReviewAt(calculateNextReview(familiarity));
+        double memoryStrength = word.getMemoryStrength() == null ? 0.2 : word.getMemoryStrength();
+        int intervalDays = 1;
+        ReviewRecord last = reviewRecordRepository.findTopByWordIdOrderByReviewedAtDesc(word.getId());
+        if (last != null && last.getReviewedAt() != null) {
+            long days = ChronoUnit.DAYS.between(last.getReviewedAt(), TimeUtil.nowDateTime());
+            intervalDays = (int) Math.max(1, days);
+        }
+        if (correct) {
+            double gain = 0.08 + 0.04 * Math.log1p(intervalDays);
+            memoryStrength = Math.min(1.0, memoryStrength + gain);
+        } else {
+            memoryStrength = Math.max(0.0, memoryStrength - 0.2);
+        }
+        word.setMemoryStrength(memoryStrength);
+        word.setNextReviewAt(calculateNextReview(familiarity, memoryStrength, intervalDays, correct));
         wordRepository.save(word);
 
         ReviewRecord record = ReviewRecord.builder()
@@ -145,6 +160,7 @@ public class WordService {
                         .wordRoot(parsed.wordRoot)
                         .similarWords(parsed.similarWords)
                         .examTag(parsed.examTag)
+                        .memoryStrength(0.2)
                         .owner(user)
                         .build();
                 toSave.add(word);
@@ -159,16 +175,17 @@ public class WordService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "未找到该单词"));
     }
 
-    private LocalDateTime calculateNextReview(int familiarity) {
+    private LocalDateTime calculateNextReview(int familiarity, double memoryStrength, int intervalDays, boolean correct) {
         LocalDateTime now = TimeUtil.nowDateTime();
-        return switch (familiarity) {
-            case 0 -> now.plus(1, ChronoUnit.HOURS);
-            case 1 -> now.plus(1, ChronoUnit.DAYS);
-            case 2 -> now.plus(3, ChronoUnit.DAYS);
-            case 3 -> now.plus(7, ChronoUnit.DAYS);
-            case 4 -> now.plus(14, ChronoUnit.DAYS);
-            default -> now.plus(30, ChronoUnit.DAYS);
-        };
+        if (!correct) {
+            return now.plus(6, ChronoUnit.HOURS);
+        }
+        if (memoryStrength < 0.3) {
+            return now.plus(12, ChronoUnit.HOURS);
+        }
+        double base = 1 + memoryStrength * 8 + Math.log1p(intervalDays) + familiarity * 1.5;
+        int days = (int) Math.round(Math.min(60, Math.max(1, base)));
+        return now.plus(days, ChronoUnit.DAYS);
     }
 
     private String extractText(MultipartFile file) {
