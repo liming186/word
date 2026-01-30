@@ -39,6 +39,9 @@ public class AiService {
 
         String resolvedApiBase = (apiBase == null || apiBase.isBlank()) ? "https://api.openai.com" : apiBase;
         String url = resolvedApiBase.endsWith("/") ? resolvedApiBase.substring(0, resolvedApiBase.length() - 1) : resolvedApiBase;
+        if (url.endsWith("/v1")) {
+            url = url.substring(0, url.length() - 3);
+        }
         url = url + "/v1/chat/completions";
 
         String summary = buildSummary(request);
