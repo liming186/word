@@ -51,6 +51,7 @@ function WordStudyApp({ token, currentUser }: WordStudyProps) {
   const [showCompletion, setShowCompletion] = useState(false)
   const [showDefinition, setShowDefinition] = useState(false)
   const [learningChoice, setLearningChoice] = useState<boolean | null>(null)
+  const [flipActive, setFlipActive] = useState(false)
   const [dueCount, setDueCount] = useState(0)
   const [pageIndex, setPageIndex] = useState(0)
   const pageRef = useRef<HTMLDivElement | null>(null)
@@ -71,6 +72,8 @@ function WordStudyApp({ token, currentUser }: WordStudyProps) {
     () => (currentLearningWord ? splitToList(currentLearningWord.similarWords) : []),
     [currentLearningWord],
   )
+  const timeSegments = useMemo(() => buildTimeSegments(studyBehavior), [studyBehavior])
+  const radarPoints = useMemo(() => buildRadarPoints(studyBehavior), [studyBehavior])
 
   useEffect(() => {
     if (!token) return
@@ -289,6 +292,8 @@ function WordStudyApp({ token, currentUser }: WordStudyProps) {
       void finishSession()
       return
     }
+    setFlipActive(true)
+    window.setTimeout(() => setFlipActive(false), 520)
     setLearningIndex(nextIndex)
     setShowDefinition(false)
     setLearningChoice(null)
@@ -438,21 +443,38 @@ function WordStudyApp({ token, currentUser }: WordStudyProps) {
                   </>
                 )}
               </div>
-              <div className="hero-info">
+              <div className="hero-stats">
                 {studyLoading && !studyStats ? (
                   <>
-                    <span className="skeleton-line sm" />
-                    <span className="skeleton-line sm" />
-                    <span className="skeleton-line sm" />
+                    <div className="stat-card skeleton-card" />
+                    <div className="stat-card skeleton-card" />
+                    <div className="stat-card skeleton-card" />
+                    <div className="stat-card skeleton-card" />
                   </>
                 ) : (
                   <>
-                    <span>词库 {wordCount} 个</span>
-                    <span>待复习 {dueCount} 个</span>
-                    <span>
-                      今日已学 {studyStats?.todayCount ?? 0} / {dailyTarget}
-                    </span>
-                    <span>今日学习 {studyBehavior?.todayMinutes ?? 0} 分钟</span>
+                    <div className="stat-card">
+                      <span className="stat-label">词库</span>
+                      <span className="stat-value">{wordCount}</span>
+                      <span className="stat-sub">累计词条</span>
+                    </div>
+                    <div className="stat-card">
+                      <span className="stat-label">待复习</span>
+                      <span className="stat-value">{dueCount}</span>
+                      <span className="stat-sub">需要巩固</span>
+                    </div>
+                    <div className="stat-card">
+                      <span className="stat-label">今日已学</span>
+                      <span className="stat-value">
+                        {studyStats?.todayCount ?? 0} / {dailyTarget}
+                      </span>
+                      <span className="stat-sub">今日目标</span>
+                    </div>
+                    <div className="stat-card">
+                      <span className="stat-label">学习时长</span>
+                      <span className="stat-value">{studyBehavior?.todayMinutes ?? 0} 分钟</span>
+                      <span className="stat-sub">今日专注</span>
+                    </div>
                   </>
                 )}
               </div>
@@ -472,28 +494,59 @@ function WordStudyApp({ token, currentUser }: WordStudyProps) {
               <div className="behavior-header">学习节奏</div>
               {studyBehavior ? (
                 <>
-                  <div className="behavior-metrics">
-                    <span>近 7 天平均 {studyBehavior.avgDurationMinutes} 分钟</span>
-                    <span>
-                      高峰时段 {studyBehavior.preferredHour >= 0 ? `${studyBehavior.preferredHour}:00` : '暂无'}
-                    </span>
-                    <span>学习记录 {studyBehavior.sessionsLast7Days} 次</span>
-                    <span>今日学习 {studyBehavior.todayMinutes} 分钟</span>
-                  </div>
-                  <div className="behavior-bars">
-                    <div className="bar-row">
-                      <span>专注度</span>
-                      <div className="bar-track">
-                        <div className="bar-fill" style={{ width: `${studyBehavior.focusScore}%` }} />
-                      </div>
-                      <span>{studyBehavior.focusScore}</span>
+                  <div className="behavior-grid">
+                    <div className="behavior-metrics">
+                      <span>近 7 天平均 {studyBehavior.avgDurationMinutes} 分钟</span>
+                      <span>
+                        高峰时段 {studyBehavior.preferredHour >= 0 ? `${studyBehavior.preferredHour}:00` : '暂无'}
+                      </span>
+                      <span>学习记录 {studyBehavior.sessionsLast7Days} 次</span>
+                      <span>今日学习 {studyBehavior.todayMinutes} 分钟</span>
                     </div>
-                    <div className="bar-row">
-                      <span>持续度</span>
-                      <div className="bar-track">
-                        <div className="bar-fill" style={{ width: `${studyBehavior.consistencyScore}%` }} />
+                    <div className="behavior-visuals">
+                      <div className="visual-card">
+                        <div className="visual-title">学习时段</div>
+                        <div
+                          className="time-pie"
+                          style={{ background: `conic-gradient(${timeSegments.gradient})` }}
+                        />
+                        <div className="legend">
+                          {timeSegments.items.map((item) => (
+                            <span key={item.label}>
+                              <i style={{ background: item.color }} /> {item.label} {item.value}%
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                      <span>{studyBehavior.consistencyScore}</span>
+                      <div className="visual-card">
+                        <div className="visual-title">学习画像</div>
+                        <svg className="radar" viewBox="0 0 120 120" role="img" aria-label="学习画像雷达图">
+                          <polygon points="60,12 108,60 60,108 12,60" className="radar-grid" />
+                          <polygon points={radarPoints} className="radar-shape" />
+                        </svg>
+                        <div className="legend compact">
+                          <span>专注</span>
+                          <span>持续</span>
+                          <span>频次</span>
+                          <span>时长</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="behavior-bars">
+                      <div className="bar-row">
+                        <span>专注度</span>
+                        <div className="bar-track">
+                          <div className="bar-fill" style={{ width: `${studyBehavior.focusScore}%` }} />
+                        </div>
+                        <span>{studyBehavior.focusScore}</span>
+                      </div>
+                      <div className="bar-row">
+                        <span>持续度</span>
+                        <div className="bar-track">
+                          <div className="bar-fill" style={{ width: `${studyBehavior.consistencyScore}%` }} />
+                        </div>
+                        <span>{studyBehavior.consistencyScore}</span>
+                      </div>
                     </div>
                   </div>
                   <p className="muted">系统会根据学习时长与时间段动态调整今日计划。</p>
@@ -805,6 +858,7 @@ function WordStudyApp({ token, currentUser }: WordStudyProps) {
                     total={learningWords.length}
                     word={currentLearningWord}
                     showDefinition={showDefinition}
+                    flipActive={flipActive}
                     learningChoice={learningChoice}
                     meaningList={currentMeaningList}
                     exampleList={currentExampleList}
@@ -829,6 +883,7 @@ type StudyCardProps = {
   total: number
   word?: Word
   showDefinition: boolean
+  flipActive: boolean
   learningChoice: boolean | null
   meaningList: string[]
   exampleList: string[]
@@ -842,6 +897,7 @@ const StudyCard = memo(function StudyCard({
   total,
   word,
   showDefinition,
+  flipActive,
   learningChoice,
   meaningList,
   exampleList,
@@ -851,7 +907,8 @@ const StudyCard = memo(function StudyCard({
 }: StudyCardProps) {
   if (!word) return null
   return (
-    <div className="study-card">
+    <div className={`study-card-frame${flipActive ? ' flip' : ''}${showDefinition ? ' revealed' : ''}`}>
+      <div className="study-card">
       <div className="progress">
         <span>
           第 {index + 1} / {total} 个
@@ -913,6 +970,69 @@ const StudyCard = memo(function StudyCard({
           下一词
         </button>
       </div>
+      </div>
     </div>
   )
 })
+
+function buildTimeSegments(behavior: StudyBehavior | null) {
+  const labels = ['夜间', '上午', '下午', '晚上']
+  const colors = ['#9bd5ad', '#4fd188', '#2f9a5c', '#1e7043']
+  const weights = [1, 1, 1, 1]
+  if (behavior && behavior.preferredHour >= 0) {
+    const idx = Math.min(3, Math.max(0, Math.floor(behavior.preferredHour / 6)))
+    weights[idx] += 2
+  }
+  const total = weights.reduce((sum, w) => sum + w, 0)
+  const values = weights.map((w) => Math.round((w / total) * 100))
+  const normalized = normalizePercentages(values)
+  let current = 0
+  const gradientParts = normalized.map((value, idx) => {
+    const start = current
+    const end = current + value
+    current = end
+    return `${colors[idx]} ${start}% ${end}%`
+  })
+  return {
+    items: labels.map((label, idx) => ({ label, value: normalized[idx], color: colors[idx] })),
+    gradient: gradientParts.join(', '),
+  }
+}
+
+function buildRadarPoints(behavior: StudyBehavior | null) {
+  if (!behavior) return ''
+  const focus = clampScore(behavior.focusScore)
+  const consistency = clampScore(behavior.consistencyScore)
+  const frequency = clampScore(behavior.sessionsLast7Days * 10)
+  const duration = clampScore(behavior.avgDurationMinutes * 4)
+  const values = [focus, frequency, duration, consistency]
+  const angles = [-90, 0, 90, 180]
+  const points = values.map((value, idx) => polarPoint(60, 60, (value / 100) * 42, angles[idx]))
+  return points.map((p) => `${p.x},${p.y}`).join(' ')
+}
+
+function polarPoint(cx: number, cy: number, radius: number, angleDeg: number) {
+  const angle = (angleDeg * Math.PI) / 180
+  return {
+    x: Math.round(cx + radius * Math.cos(angle)),
+    y: Math.round(cy + radius * Math.sin(angle)),
+  }
+}
+
+function clampScore(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)))
+}
+
+function normalizePercentages(values: number[]) {
+  const total = values.reduce((sum, v) => sum + v, 0)
+  if (total === 100) return values
+  const scaled = values.map((v) => Math.floor((v / total) * 100))
+  let diff = 100 - scaled.reduce((sum, v) => sum + v, 0)
+  let i = 0
+  while (diff > 0) {
+    scaled[i % scaled.length] += 1
+    diff -= 1
+    i += 1
+  }
+  return scaled
+}
